@@ -1,0 +1,154 @@
+#include <stdio.h>
+#include <unistd.h>
+
+struct Process{
+    int processNumber;
+    int processArrivalTime; 
+    int processBurstTime;
+    int remainingBurstTime;
+    int processWaitingTime;
+    int processTurnaroundTime;
+    int processEndTime;
+    int processCompleted;
+};
+
+//provide the shortest arrival time among the processes which are not completed till now
+int currentShortestArrivalTime(struct Process p[], int NumOfProcess){
+    int ShortestArrivalTime=__INT_MAX__;
+    for(int i=0;i<NumOfProcess;i++){
+        if(p[i].processCompleted==0 && p[i].processArrivalTime<ShortestArrivalTime){
+            
+            ShortestArrivalTime=p[i].processArrivalTime;
+        }
+    }
+    return ShortestArrivalTime;
+}
+
+//sort the array on the basis of burst time of processes
+void remainingBurstTimeSort(struct Process p[], int NumOfProcess){
+    struct Process temp;
+    for(int i=0;i<NumOfProcess;i++){
+        for(int j=0;j<NumOfProcess-i-1;j++){
+            if(p[j].remainingBurstTime>p[j+1].remainingBurstTime){
+                temp=p[j];
+                p[j]=p[j+1];
+                p[j+1]=temp;
+            }
+        }
+    }
+
+    return;
+
+}
+
+
+//sort the array on the basis of process Number
+void processNumberSort(struct Process p[], int NumOfProcess){
+    struct Process temp;
+    for(int i=0;i<NumOfProcess;i++){
+        for(int j=0;j<NumOfProcess-i-1;j++){
+            if(p[j].processNumber>p[j+1].processNumber){
+                temp=p[j];
+                p[j]=p[j+1];
+                p[j+1]=temp;
+            }
+        }
+    }
+
+    return;
+
+}
+
+
+int main(){
+    int numOfProcess,numOfProcessLeft,currentExecutionTime;
+    float avgTurnaroundTime=0,avgWaitingTime=0;
+
+    printf("Enter Number of Process : ");
+    scanf("%d",&numOfProcess);
+    printf("\n");
+    numOfProcessLeft=numOfProcess;
+    if(numOfProcess<=0){
+        printf("Number of process should be greater than 0 ");
+        return -1;
+    }
+
+    //creating an array of object of structure 
+    struct Process processArray[numOfProcess];
+
+    for(int i=0;i<numOfProcess;i++){
+        printf("Enter Arrival time of Process %d :",i+1);
+        scanf("%d",&processArray[i].processArrivalTime);
+
+        printf("Enter Burst time of Process %d : ",i+1);
+        scanf("%d",&processArray[i].processBurstTime);
+        processArray[i].remainingBurstTime=processArray[i].processBurstTime;
+
+        processArray[i].processNumber=i+1;
+        processArray[i].processCompleted=0;
+
+        if(&processArray[i].processArrivalTime<0){
+            printf("Arrival time cannot be negative ");
+            return -1;
+        }
+        if(&processArray[i].processBurstTime<0){
+            printf("Burst time cannot be negative ");
+            return -1;
+        }
+        printf("\n");  
+    }
+
+    //starting the program from shotest arrival Time
+    currentExecutionTime=currentShortestArrivalTime(processArray,numOfProcess);
+
+    //sorting the array on the basis of priority of process
+    
+    int csat;
+    while(numOfProcessLeft!=0){
+        remainingBurstTimeSort(processArray,numOfProcess);
+        csat=currentShortestArrivalTime(processArray,numOfProcess);
+        //checking whether the current execution time is smaller than shortest arrival time  which happen when cpu is idle
+        if(currentExecutionTime<csat){
+            printf("CPU remain idle from %d to %d \n",currentExecutionTime,csat);
+            currentExecutionTime=csat;
+        }
+
+        for(int i=0;i<numOfProcess;i++){
+            if(processArray[i].processCompleted==0 && processArray[i].processArrivalTime<=currentExecutionTime){
+                printf("Process %d executes from %d to %d\n",processArray[i].processNumber,currentExecutionTime,currentExecutionTime+1);
+                currentExecutionTime+=1;
+                processArray[i].remainingBurstTime-=1;
+                if(processArray[i].remainingBurstTime==0){
+                    processArray[i].processEndTime=currentExecutionTime;
+                    processArray[i].processCompleted=1;
+                    numOfProcessLeft--;
+                }
+                break;
+            }
+        }
+
+    }
+    
+    processNumberSort(processArray,numOfProcess);
+
+    printf("\nProcess\tArrivalTime\tBurstTime\tWaitingTime\tTurnAroundTime\n");
+    for(int i =0;i<numOfProcess;i++){
+        processArray[i].processTurnaroundTime=processArray[i].processEndTime-processArray[i].processArrivalTime;
+        processArray[i].processWaitingTime=processArray[i].processTurnaroundTime-processArray[i].processBurstTime;
+
+        printf(" %d\t\t%d\t\t%d\t\t%d\t\t%d\n",processArray[i].processNumber,processArray[i].processArrivalTime,processArray[i].processBurstTime,processArray[i].processWaitingTime,processArray[i].processTurnaroundTime);
+        
+        avgTurnaroundTime+=processArray[i].processTurnaroundTime;
+        avgWaitingTime+=processArray[i].processWaitingTime;
+    }
+
+        
+
+    avgWaitingTime = (double)avgWaitingTime / numOfProcess;
+    avgTurnaroundTime = (double)avgTurnaroundTime  / numOfProcess;
+
+    printf("\n\nAverage Waiting Time:\t%f", avgWaitingTime);
+    printf("\nAverage Turnaround Time:\t%f\n", avgTurnaroundTime);
+
+    return 0;
+}
